@@ -201,11 +201,18 @@ export default function Home() {
       if (e.key === 'Escape' && showHelp) {
         setShowHelp(false);
       }
+      // Ctrl+P to toggle pin on most recent note
+      if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
+        e.preventDefault();
+        if (notes.length > 0) {
+          togglePin(notes[0].id);
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleTheme, showHelp]);
+  }, [toggleTheme, showHelp, notes]);
 
   const handleAddNote = () => {
     if (inputValue.trim()) {
@@ -630,6 +637,14 @@ export default function Home() {
                     <span className="text-sm">Show help</span>
                   </div>
                   <p className="text-xs text-muted-foreground ml-0">Display this keyboard shortcuts guide</p>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <kbd className="bg-secondary text-secondary-foreground px-2 py-1 rounded text-xs font-mono border border-border">Ctrl+P</kbd>
+                    <span className="text-sm">Pin recent note</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground ml-0">Pin or unpin the most recent note</p>
                 </div>
 
                 <div>
