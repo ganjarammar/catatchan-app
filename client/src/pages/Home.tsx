@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun, HelpCircle, Pin } from 'lucide-react';
+import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun, HelpCircle, Pin, Sparkles } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 /**
@@ -31,7 +31,7 @@ interface Note {
 type SortOrder = 'newest' | 'oldest';
 
 export default function Home() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, toggleKawaii, isKawaii } = useTheme();
   const [notes, setNotes] = useState<Note[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -331,17 +331,31 @@ export default function Home() {
                 Keyboard-first note app. Press <kbd className="bg-card text-foreground px-2 py-1 rounded text-xs border border-border">Ctrl+K</kbd> to add, <kbd className="bg-card text-foreground px-2 py-1 rounded text-xs border border-border">Ctrl+F</kbd> to search.
               </p>
             </div>
-            <button
-              onClick={toggleTheme}
-              className="flex-shrink-0 p-2 text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 rounded-md transition-colors"
-              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode (Alt+T)`}
-            >
-              {theme === 'light' ? (
-                <Moon size={20} />
-              ) : (
-                <Sun size={20} />
-              )}
-            </button>
+            <div className="flex-shrink-0 flex gap-2">
+              <button
+                onClick={toggleKawaii}
+                className={`p-2 rounded-md transition-colors ${
+                  isKawaii
+                    ? 'text-accent bg-accent/20 hover:bg-accent/30'
+                    : 'text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80'
+                }`}
+                title={isKawaii ? 'Disable kawaii mode' : 'Enable kawaii mode'}
+              >
+                <Sparkles size={20} />
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="flex-shrink-0 p-2 text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 rounded-md transition-colors disabled:opacity-50"
+                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode (Alt+T)`}
+                disabled={isKawaii}
+              >
+                {theme === 'light' ? (
+                  <Moon size={20} />
+                ) : (
+                  <Sun size={20} />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </header>

@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark";
+type Theme = "light" | "dark" | "kawaii";
 
 interface ThemeContextType {
   theme: Theme;
   toggleTheme?: () => void;
+  toggleKawaii?: () => void;
+  isKawaii: boolean;
   switchable: boolean;
 }
 
@@ -29,27 +31,52 @@ export function ThemeProvider({
     return defaultTheme;
   });
 
+  const [isKawaii, setIsKawaii] = useState(() => {
+    if (switchable) {
+      const stored = localStorage.getItem("isKawaii");
+      return stored === "true";
+    }
+    return false;
+  });
+
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
+    if (isKawaii) {
+      root.classList.add("kawaii");
       root.classList.remove("dark");
+    } else {
+      root.classList.remove("kawaii");
+      if (theme === "dark") {
+        root.classList.add("dark");
+      } else {
+        root.classList.remove("dark");
+      }
     }
 
     if (switchable) {
       localStorage.setItem("theme", theme);
+      localStorage.setItem("isKawaii", isKawaii.toString());
     }
-  }, [theme, switchable]);
+  }, [theme, isKawaii, switchable]);
 
   const toggleTheme = switchable
     ? () => {
-        setTheme(prev => (prev === "light" ? "dark" : "light"));
+        if (isKawaii) {
+          setIsKawaii(false);
+        } else {
+          setTheme(prev => (prev === "light" ? "dark" : "light"));
+        }
+      }
+    : undefined;
+
+  const toggleKawaii = switchable
+    ? () => {
+        setIsKawaii(prev => !prev);
       }
     : undefined;
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, switchable }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, toggleKawaii, isKawaii, switchable }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant kawaii (&:is(.kawaii *));
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -114,6 +115,43 @@
   --sidebar-ring: #d4a574;
 }
 
+.kawaii {
+  /* Kawaii Pastel Color Palette */
+  --primary: #ff9ecb;
+  --primary-foreground: #fff5f9;
+  --sidebar-primary: #ff85b3;
+  --sidebar-primary-foreground: #fff5f9;
+  --background: #fffbfe;
+  --foreground: #5a3d5c;
+  --card: #fff8fb;
+  --card-foreground: #5a3d5c;
+  --popover: #fff8fb;
+  --popover-foreground: #5a3d5c;
+  --secondary: #f0d9f0;
+  --secondary-foreground: #7a5a7c;
+  --muted: #f5e8f5;
+  --muted-foreground: #9a7a9c;
+  --accent: #ffc0e0;
+  --accent-foreground: #5a3d5c;
+  --destructive: #ff6b9d;
+  --destructive-foreground: #fff5f9;
+  --border: #f0d9f0;
+  --input: #fff8fb;
+  --ring: #ff9ecb;
+  --chart-1: #ff9ecb;
+  --chart-2: #ffb3d9;
+  --chart-3: #ffc0e0;
+  --chart-4: #ffcce8;
+  --chart-5: #ffd9f0;
+  --sidebar: #fffbfe;
+  --sidebar-foreground: #5a3d5c;
+  --sidebar-accent: #ff9ecb;
+  --sidebar-accent-foreground: #5a3d5c;
+  --sidebar-border: #f0d9f0;
+  --sidebar-ring: #ff9ecb;
+  --radius: 1.2rem;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -188,6 +226,15 @@
 
 .soft-shadow-hover {
   box-shadow: 0 8px 20px rgba(42, 38, 32, 0.12);
+}
+
+/* Kawaii Design System - Softer, rounder shadows */
+.kawaii .soft-shadow {
+  box-shadow: 0 4px 16px rgba(255, 158, 203, 0.15);
+}
+
+.kawaii .soft-shadow-hover {
+  box-shadow: 0 8px 24px rgba(255, 158, 203, 0.2);
 }
 
 /* Smooth transitions for interactions */
