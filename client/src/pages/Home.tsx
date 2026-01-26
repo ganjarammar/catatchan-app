@@ -178,11 +178,18 @@ export default function Home() {
         e.preventDefault();
         searchRef.current?.focus();
       }
+      // Alt + T to toggle theme
+      if (e.altKey && e.key === 't') {
+        e.preventDefault();
+        if (toggleTheme) {
+          toggleTheme();
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [toggleTheme]);
 
   const handleAddNote = () => {
     if (inputValue.trim()) {
@@ -298,7 +305,7 @@ export default function Home() {
             <button
               onClick={toggleTheme}
               className="flex-shrink-0 p-2 text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 rounded-md transition-colors"
-              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode (Alt+T)`}
             >
               {theme === 'light' ? (
                 <Moon size={20} />
