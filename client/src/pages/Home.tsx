@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, Search, X, ArrowUp, ArrowDown } from 'lucide-react';
+import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 /**
  * Design Philosophy: Warm Minimalism with Personality
@@ -15,6 +16,7 @@ import { Trash2, Search, X, ArrowUp, ArrowDown } from 'lucide-react';
  * - Suggest recently used tags as user types
  * - Search notes by content or tags
  * - Sort notes by creation date (newest/oldest first)
+ * - Dark mode toggle for comfortable viewing
  * - Keyboard-friendly interactions throughout
  */
 
@@ -28,6 +30,7 @@ interface Note {
 type SortOrder = 'newest' | 'oldest';
 
 export default function Home() {
+  const { theme, toggleTheme } = useTheme();
   const [notes, setNotes] = useState<Note[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -283,12 +286,27 @@ export default function Home() {
       {/* Header */}
       <header className="border-b border-border py-6 px-4 sm:px-6">
         <div className="max-w-2xl mx-auto">
-          <h1 className="font-display text-3xl sm:text-4xl text-foreground">
-            Catatchan
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Keyboard-first note app. Press <kbd className="bg-card text-foreground px-2 py-1 rounded text-xs border border-border">Ctrl+K</kbd> to add, <kbd className="bg-card text-foreground px-2 py-1 rounded text-xs border border-border">Ctrl+F</kbd> to search.
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="font-display text-3xl sm:text-4xl text-foreground">
+                Catatchan
+              </h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                Keyboard-first note app. Press <kbd className="bg-card text-foreground px-2 py-1 rounded text-xs border border-border">Ctrl+K</kbd> to add, <kbd className="bg-card text-foreground px-2 py-1 rounded text-xs border border-border">Ctrl+F</kbd> to search.
+              </p>
+            </div>
+            <button
+              onClick={toggleTheme}
+              className="flex-shrink-0 p-2 text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 rounded-md transition-colors"
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? (
+                <Moon size={20} />
+              ) : (
+                <Sun size={20} />
+              )}
+            </button>
+          </div>
         </div>
       </header>
 

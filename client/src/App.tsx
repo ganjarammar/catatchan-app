@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 /**
  * Design Philosophy: Warm Minimalism with Personality
  * Using light theme as default for the warm cream aesthetic
+ * Theme switching is enabled for user preference
  */
 
 function Router() {
@@ -27,6 +28,7 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider
         defaultTheme="light"
+        switchable
       >
         <TooltipProvider>
           <Toaster />
