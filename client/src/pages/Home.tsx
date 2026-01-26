@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun } from 'lucide-react';
+import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun, HelpCircle } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 /**
@@ -38,6 +38,7 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionIndex, setSuggestionIndex] = useState(-1);
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
+  const [showHelp, setShowHelp] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -185,11 +186,20 @@ export default function Home() {
           toggleTheme();
         }
       }
+      // ? to open help modal
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        e.preventDefault();
+        setShowHelp(true);
+      }
+      // Escape to close help modal
+      if (e.key === 'Escape' && showHelp) {
+        setShowHelp(false);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleTheme]);
+  }, [toggleTheme, showHelp]);
 
   const handleAddNote = () => {
     if (inputValue.trim()) {
@@ -544,6 +554,81 @@ export default function Home() {
       <footer className="border-t border-border py-4 px-4 sm:px-6 text-center text-xs text-muted-foreground">
         <p>All notes are saved locally in your browser • Use #tags to categorize notes</p>
       </footer>
+
+      {/* Help Modal */}
+      {showHelp && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-card text-foreground rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <HelpCircle size={20} className="text-accent" />
+                <h2 className="font-display text-lg">Keyboard Shortcuts</h2>
+              </div>
+              <button
+                onClick={() => setShowHelp(false)}
+                className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                title="Close (Esc)"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div className="space-y-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <kbd className="bg-secondary text-secondary-foreground px-2 py-1 rounded text-xs font-mono border border-border">Ctrl+K</kbd>
+                    <span className="text-sm">Focus note input</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground ml-0">Quickly jump to the note input field</p>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <kbd className="bg-secondary text-secondary-foreground px-2 py-1 rounded text-xs font-mono border border-border">Ctrl+F</kbd>
+                    <span className="text-sm">Focus search</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground ml-0">Search notes by content or tags</p>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <kbd className="bg-secondary text-secondary-foreground px-2 py-1 rounded text-xs font-mono border border-border">Alt+T</kbd>
+                    <span className="text-sm">Toggle theme</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground ml-0">Switch between light and dark modes</p>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <kbd className="bg-secondary text-secondary-foreground px-2 py-1 rounded text-xs font-mono border border-border">?</kbd>
+                    <span className="text-sm">Show help</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground ml-0">Display this keyboard shortcuts guide</p>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <kbd className="bg-secondary text-secondary-foreground px-2 py-1 rounded text-xs font-mono border border-border">Esc</kbd>
+                    <span className="text-sm">Close modal</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground ml-0">Close this help modal</p>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <h3 className="font-label text-sm mb-2">Tagging Tips</h3>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>Type #tag to add tags to notes</li>
+                  <li>Tags appear as suggestions while you type</li>
+                  <li>Click tags to filter notes by category</li>
+                  <li>Search works on both note text and tags</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
