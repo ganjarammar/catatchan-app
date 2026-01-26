@@ -8,11 +8,12 @@ import { Trash2, X } from 'lucide-react';
  * - Keyboard-first interactions with smooth animations
  * - Minimal UI, maximum focus on content
  * 
- * Tagging System:
+ * Tagging System with Suggestions:
  * - Extract tags from note text (e.g., #work, #ideas)
  * - Filter notes by selected tags
  * - Display tags with warm amber color
- * - Keyboard-friendly tag selection
+ * - Suggest recently used tags as user types
+ * - Keyboard-friendly tag selection and suggestions
  */
 
 interface Note {
@@ -26,6 +27,8 @@ export default function Home() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestionIndex, setSuggestionIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Extract tags from text (e.g., #work, #ideas)
@@ -35,13 +38,38 @@ export default function Home() {
     return Array.from(new Set(matches.map(tag => tag.toLowerCase())));
   };
 
-  // Get all unique tags from notes
+  // Get the current tag being typed (the last #tag in the input)
+  const getCurrentTag = (text: string): string => {
+    const tagRegex = /#[\w]*$/;
+    const match = text.match(tagRegex);
+    return match ? match[0] : '';
+  };
+
+  // Get all unique tags from notes, sorted by recency
   const getAllTags = (): string[] => {
     const allTags = new Set<string>();
     notes.forEach(note => {
       note.tags.forEach(tag => allTags.add(tag));
     });
     return Array.from(allTags).sort();
+  };
+
+  // Get tag suggestions based on current input
+  const getTagSuggestions = (input: string): string[] => {
+    const currentTag = getCurrentTag(input);
+    if (!currentTag || currentTag.length < 2) {
+      return [];
+    }
+
+    const allTags = getAllTags();
+    const alreadyUsedTags = extractTags(input);
+    
+    return allTags
+      .filter(tag => 
+        tag.startsWith(currentTag.toLowerCase()) && 
+        !alreadyUsedTags.includes(tag)
+      )
+      .slice(0, 5); // Limit to 5 suggestions
   };
 
   // Filter notes based on selected tags
@@ -79,6 +107,13 @@ export default function Home() {
     localStorage.setItem('catatchan_notes', JSON.stringify(notes));
   }, [notes]);
 
+  // Update suggestions when input changes
+  useEffect(() => {
+    const newSuggestions = getTagSuggestions(inputValue);
+    setSuggestions(newSuggestions);
+    setSuggestionIndex(-1);
+  }, [inputValue, notes]);
+
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -104,6 +139,8 @@ export default function Home() {
       };
       setNotes([newNote, ...notes]);
       setInputValue('');
+      setSuggestions([]);
+      setSuggestionIndex(-1);
       inputRef.current?.focus();
     }
   };
@@ -112,7 +149,40 @@ export default function Home() {
     setNotes(notes.filter(note => note.id !== id));
   };
 
+  const insertSuggestion = (suggestion: string) => {
+    const currentTag = getCurrentTag(inputValue);
+    if (currentTag) {
+      const newValue = inputValue.slice(0, -currentTag.length) + suggestion;
+      setInputValue(newValue);
+      setSuggestions([]);
+      setSuggestionIndex(-1);
+      inputRef.current?.focus();
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Handle suggestion navigation with arrow keys
+    if (suggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSuggestionIndex(prev => 
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        );
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+        return;
+      }
+      if (e.key === 'Tab' || (e.key === 'Enter' && suggestionIndex >= 0)) {
+        e.preventDefault();
+        insertSuggestion(suggestions[suggestionIndex]);
+        return;
+      }
+    }
+
+    // Handle Enter to save note
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleAddNote();
@@ -164,20 +234,46 @@ export default function Home() {
         <div className="max-w-2xl mx-auto">
           {/* Input Section */}
           <div className="mb-8">
-            <div className="soft-shadow rounded-lg bg-card p-6">
+            <div className="soft-shadow rounded-lg bg-card p-6 relative">
               <label htmlFor="note-input" className="block text-sm font-label text-muted-foreground mb-3">
                 Quick Note
               </label>
-              <input
-                ref={inputRef}
-                id="note-input"
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type your thought and press Enter... (use #tag for categories)"
-                className="w-full bg-background text-foreground placeholder-muted-foreground border border-border rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-card transition-all"
-              />
+              <div className="relative">
+                <input
+                  ref={inputRef}
+                  id="note-input"
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Type your thought and press Enter... (use #tag for categories)"
+                  className="w-full bg-background text-foreground placeholder-muted-foreground border border-border rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-card transition-all"
+                />
+
+                {/* Tag Suggestions Dropdown */}
+                {suggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-md shadow-lg z-10 overflow-hidden">
+                    {suggestions.map((suggestion, index) => (
+                      <button
+                        key={suggestion}
+                        onClick={() => insertSuggestion(suggestion)}
+                        onMouseEnter={() => setSuggestionIndex(index)}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                          index === suggestionIndex
+                            ? 'bg-accent text-accent-foreground'
+                            : 'bg-card text-foreground hover:bg-secondary'
+                        }`}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                    <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border">
+                      Press <kbd className="bg-background text-foreground px-1 rounded">↓</kbd> <kbd className="bg-background text-foreground px-1 rounded">↑</kbd> to navigate, <kbd className="bg-background text-foreground px-1 rounded">Tab</kbd> to select
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="mt-3 flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">
                   {inputValue.length} characters
