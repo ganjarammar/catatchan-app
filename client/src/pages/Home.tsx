@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, Search, X } from 'lucide-react';
+import { Trash2, Search, X, ArrowUp, ArrowDown } from 'lucide-react';
 
 /**
  * Design Philosophy: Warm Minimalism with Personality
@@ -14,6 +14,7 @@ import { Trash2, Search, X } from 'lucide-react';
  * - Display tags with warm amber color
  * - Suggest recently used tags as user types
  * - Search notes by content or tags
+ * - Sort notes by creation date (newest/oldest first)
  * - Keyboard-friendly interactions throughout
  */
 
@@ -24,6 +25,8 @@ interface Note {
   tags: string[];
 }
 
+type SortOrder = 'newest' | 'oldest';
+
 export default function Home() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -31,6 +34,7 @@ export default function Home() {
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionIndex, setSuggestionIndex] = useState(-1);
+  const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
   const inputRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -95,6 +99,17 @@ export default function Home() {
     });
   };
 
+  // Sort notes by creation date
+  const sortNotes = (notesToSort: Note[], order: SortOrder): Note[] => {
+    const sorted = [...notesToSort];
+    if (order === 'newest') {
+      sorted.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    } else {
+      sorted.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    }
+    return sorted;
+  };
+
   // Filter notes based on selected tags
   const getFilteredNotes = (): Note[] => {
     let filtered = notes;
@@ -109,6 +124,9 @@ export default function Home() {
 
     // Apply search filter
     filtered = searchNotes(searchQuery, filtered);
+
+    // Apply sorting
+    filtered = sortNotes(filtered, sortOrder);
 
     return filtered;
   };
@@ -241,6 +259,10 @@ export default function Home() {
   const clearSearch = () => {
     setSearchQuery('');
     searchRef.current?.focus();
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest');
   };
 
   const formatTime = (date: Date) => {
@@ -410,17 +432,38 @@ export default function Home() {
                     : 'No notes yet'
                   : `${filteredNotes.length} note${filteredNotes.length !== 1 ? 's' : ''}`}
               </h2>
-              {hasActiveFilters && (
-                <button
-                  onClick={() => {
-                    clearFilters();
-                    clearSearch();
-                  }}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Reset all filters
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {notes.length > 0 && (
+                  <button
+                    onClick={toggleSortOrder}
+                    className="flex items-center gap-1 px-3 py-1 text-xs font-label text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 rounded-md transition-all"
+                    title={`Sort: ${sortOrder === 'newest' ? 'Newest first' : 'Oldest first'}`}
+                  >
+                    {sortOrder === 'newest' ? (
+                      <>
+                        <ArrowDown size={14} />
+                        Newest
+                      </>
+                    ) : (
+                      <>
+                        <ArrowUp size={14} />
+                        Oldest
+                      </>
+                    )}
+                  </button>
+                )}
+                {hasActiveFilters && (
+                  <button
+                    onClick={() => {
+                      clearFilters();
+                      clearSearch();
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Reset filters
+                  </button>
+                )}
+              </div>
             </div>
             <div className="space-y-3">
               {filteredNotes.map((note) => (
