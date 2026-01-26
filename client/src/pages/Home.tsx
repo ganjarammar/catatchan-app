@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, X } from 'lucide-react';
+import { Trash2, Search, X } from 'lucide-react';
 
 /**
  * Design Philosophy: Warm Minimalism with Personality
@@ -8,12 +8,13 @@ import { Trash2, X } from 'lucide-react';
  * - Keyboard-first interactions with smooth animations
  * - Minimal UI, maximum focus on content
  * 
- * Tagging System with Suggestions:
+ * Complete Feature Set:
  * - Extract tags from note text (e.g., #work, #ideas)
  * - Filter notes by selected tags
  * - Display tags with warm amber color
  * - Suggest recently used tags as user types
- * - Keyboard-friendly tag selection and suggestions
+ * - Search notes by content or tags
+ * - Keyboard-friendly interactions throughout
  */
 
 interface Note {
@@ -26,10 +27,12 @@ interface Note {
 export default function Home() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [inputValue, setInputValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionIndex, setSuggestionIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   // Extract tags from text (e.g., #work, #ideas)
   const extractTags = (text: string): string[] => {
@@ -72,15 +75,42 @@ export default function Home() {
       .slice(0, 5); // Limit to 5 suggestions
   };
 
+  // Search notes by content or tags
+  const searchNotes = (query: string, notesToSearch: Note[]): Note[] => {
+    if (!query.trim()) {
+      return notesToSearch;
+    }
+
+    const lowerQuery = query.toLowerCase();
+    return notesToSearch.filter(note => {
+      // Search in note text
+      if (note.text.toLowerCase().includes(lowerQuery)) {
+        return true;
+      }
+      // Search in tags
+      if (note.tags.some(tag => tag.includes(lowerQuery))) {
+        return true;
+      }
+      return false;
+    });
+  };
+
   // Filter notes based on selected tags
   const getFilteredNotes = (): Note[] => {
-    if (selectedTags.size === 0) {
-      return notes;
+    let filtered = notes;
+
+    // Apply tag filter
+    if (selectedTags.size > 0) {
+      const tagsArray = Array.from(selectedTags);
+      filtered = filtered.filter(note =>
+        tagsArray.some(tag => note.tags.includes(tag))
+      );
     }
-    const tagsArray = Array.from(selectedTags);
-    return notes.filter(note =>
-      tagsArray.some(tag => note.tags.includes(tag))
-    );
+
+    // Apply search filter
+    filtered = searchNotes(searchQuery, filtered);
+
+    return filtered;
   };
 
   // Load notes from localStorage on mount
@@ -117,10 +147,15 @@ export default function Home() {
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + K to focus input (alternative hotkey)
+      // Cmd/Ctrl + K to focus note input
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         inputRef.current?.focus();
+      }
+      // Cmd/Ctrl + F to focus search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault();
+        searchRef.current?.focus();
       }
     };
 
@@ -160,7 +195,7 @@ export default function Home() {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleNoteInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Handle suggestion navigation with arrow keys
     if (suggestions.length > 0) {
       if (e.key === 'ArrowDown') {
@@ -203,6 +238,11 @@ export default function Home() {
     setSelectedTags(new Set());
   };
 
+  const clearSearch = () => {
+    setSearchQuery('');
+    searchRef.current?.focus();
+  };
+
   const formatTime = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
@@ -214,6 +254,7 @@ export default function Home() {
 
   const allTags = getAllTags();
   const filteredNotes = getFilteredNotes();
+  const hasActiveFilters = selectedTags.size > 0 || searchQuery.trim().length > 0;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -224,7 +265,7 @@ export default function Home() {
             Catatchan
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Keyboard-first note app. Press <kbd className="bg-card text-foreground px-2 py-1 rounded text-xs border border-border">Ctrl+K</kbd> to focus.
+            Keyboard-first note app. Press <kbd className="bg-card text-foreground px-2 py-1 rounded text-xs border border-border">Ctrl+K</kbd> to add, <kbd className="bg-card text-foreground px-2 py-1 rounded text-xs border border-border">Ctrl+F</kbd> to search.
           </p>
         </div>
       </header>
@@ -245,7 +286,7 @@ export default function Home() {
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
+                  onKeyDown={handleNoteInputKeyDown}
                   placeholder="Type your thought and press Enter... (use #tag for categories)"
                   className="w-full bg-background text-foreground placeholder-muted-foreground border border-border rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-card transition-all"
                 />
@@ -294,6 +335,34 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Search Section */}
+          {notes.length > 0 && (
+            <div className="mb-6">
+              <div className="soft-shadow rounded-lg bg-card p-4 relative">
+                <div className="flex items-center gap-2">
+                  <Search size={18} className="text-muted-foreground flex-shrink-0" />
+                  <input
+                    ref={searchRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search notes by content or tags..."
+                    className="flex-1 bg-background text-foreground placeholder-muted-foreground border-0 focus:outline-none focus:ring-0 text-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={clearSearch}
+                      className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                      title="Clear search"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Tag Filter Section */}
           {allTags.length > 0 && (
             <div className="mb-6">
@@ -333,13 +402,26 @@ export default function Home() {
 
           {/* Notes List */}
           <div>
-            <h2 className="font-label text-lg text-foreground mb-4">
-              {filteredNotes.length === 0
-                ? selectedTags.size > 0
-                  ? 'No notes with selected tags'
-                  : 'No notes yet'
-                : `${filteredNotes.length} note${filteredNotes.length !== 1 ? 's' : ''}`}
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-label text-lg text-foreground">
+                {filteredNotes.length === 0
+                  ? hasActiveFilters
+                    ? 'No matching notes'
+                    : 'No notes yet'
+                  : `${filteredNotes.length} note${filteredNotes.length !== 1 ? 's' : ''}`}
+              </h2>
+              {hasActiveFilters && (
+                <button
+                  onClick={() => {
+                    clearFilters();
+                    clearSearch();
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Reset all filters
+                </button>
+              )}
+            </div>
             <div className="space-y-3">
               {filteredNotes.map((note) => (
                 <div
