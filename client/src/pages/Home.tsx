@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun, HelpCircle } from 'lucide-react';
+import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun, HelpCircle, Pin } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 /**
@@ -25,6 +25,7 @@ interface Note {
   text: string;
   timestamp: Date;
   tags: string[];
+  isPinned?: boolean;
 }
 
 type SortOrder = 'newest' | 'oldest';
@@ -132,7 +133,12 @@ export default function Home() {
     // Apply sorting
     filtered = sortNotes(filtered, sortOrder);
 
-    return filtered;
+    // Separate pinned and unpinned notes
+    const pinned = filtered.filter(note => note.isPinned);
+    const unpinned = filtered.filter(note => !note.isPinned);
+
+    // Return pinned notes first, then unpinned
+    return [...pinned, ...unpinned];
   };
 
   // Load notes from localStorage on mount
@@ -283,6 +289,12 @@ export default function Home() {
 
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest');
+  };
+
+  const togglePin = (id: string) => {
+    setNotes(notes.map(note =>
+      note.id === id ? { ...note, isPinned: !note.isPinned } : note
+    ));
   };
 
   const formatTime = (date: Date) => {
@@ -535,13 +547,26 @@ export default function Home() {
                         {formatTime(note.timestamp)}
                       </p>
                     </div>
-                    <button
-                      onClick={() => handleDeleteNote(note.id)}
-                      className="flex-shrink-0 p-2 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                      title="Delete note"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex-shrink-0 flex gap-1">
+                      <button
+                        onClick={() => togglePin(note.id)}
+                        className={`p-2 transition-all ${
+                          note.isPinned
+                            ? 'text-accent'
+                            : 'text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100'
+                        }`}
+                        title={note.isPinned ? 'Unpin note' : 'Pin note'}
+                      >
+                        <Pin size={16} fill={note.isPinned ? 'currentColor' : 'none'} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="p-2 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                        title="Delete note"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
