@@ -247,3 +247,18 @@ input:focus, button:focus {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* Sparkle animation for kawaii mode */
+@keyframes sparkleFloat {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, -30px) scale(0.3);
+  }
+}

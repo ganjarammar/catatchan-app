@@ -3,7 +3,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { CursorSparkles } from "./components/CursorSparkles";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { useTheme } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 
 /**
@@ -23,6 +25,20 @@ function Router() {
   );
 }
 
+function AppContent() {
+  const { isKawaii } = useTheme();
+
+  return (
+    <>
+      {isKawaii && <CursorSparkles />}
+      <TooltipProvider>
+        <Toaster />
+        <Router />
+      </TooltipProvider>
+    </>
+  );
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -30,10 +46,7 @@ function App() {
         defaultTheme="light"
         switchable
       >
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <AppContent />
       </ThemeProvider>
     </ErrorBoundary>
   );
