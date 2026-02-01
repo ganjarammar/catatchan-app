@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun, HelpCircle, Pin, Sparkles } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { ExtendedNoteForm } from '@/components/ExtendedNoteForm';
+import { detectTemplateTag, TEMPLATES, TemplateType } from '@/lib/templates';
 
 /**
  * Design Philosophy: Warm Minimalism with Personality
@@ -10,6 +12,8 @@ import { useTheme } from '@/contexts/ThemeContext';
  * - Minimal UI, maximum focus on content
  * 
  * Complete Feature Set:
+ * - Quick mode for instant note capture
+ * - Extended mode for structured notes (#lang, #dev, #read)
  * - Extract tags from note text (e.g., #work, #ideas)
  * - Filter notes by selected tags
  * - Display tags with warm amber color
@@ -26,9 +30,12 @@ interface Note {
   timestamp: Date;
   tags: string[];
   isPinned?: boolean;
+  template?: TemplateType;
+  fields?: Record<string, string>;
 }
 
 type SortOrder = 'newest' | 'oldest';
+type InputMode = 'quick' | 'extended';
 
 export default function Home() {
   const { theme, toggleTheme, toggleKawaii, isKawaii } = useTheme();
@@ -40,6 +47,9 @@ export default function Home() {
   const [suggestionIndex, setSuggestionIndex] = useState(-1);
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
   const [showHelp, setShowHelp] = useState(false);
+  const [inputMode, setInputMode] = useState<InputMode>('quick');
+  const [extendedTemplate, setExtendedTemplate] = useState<TemplateType | null>(null);
+  const [extendedTags, setExtendedTags] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -95,6 +105,14 @@ export default function Home() {
       // Search in note text
       if (note.text.toLowerCase().includes(lowerQuery)) {
         return true;
+      }
+      // Search in extended fields
+      if (note.fields) {
+        if (Object.values(note.fields).some(value => 
+          value.toLowerCase().includes(lowerQuery)
+        )) {
+          return true;
+        }
       }
       // Search in tags
       if (note.tags.some(tag => tag.includes(lowerQuery))) {
@@ -217,18 +235,53 @@ export default function Home() {
   const handleAddNote = () => {
     if (inputValue.trim()) {
       const tags = extractTags(inputValue);
-      const newNote: Note = {
-        id: Date.now().toString(),
-        text: inputValue.trim(),
-        timestamp: new Date(),
-        tags,
-      };
-      setNotes([newNote, ...notes]);
-      setInputValue('');
-      setSuggestions([]);
-      setSuggestionIndex(-1);
-      inputRef.current?.focus();
+      const templateType = detectTemplateTag(inputValue);
+      if (templateType) {
+        setInputMode('extended');
+        setExtendedTemplate(templateType);
+        setExtendedTags(tags);
+      } else {
+        const newNote: Note = {
+          id: Date.now().toString(),
+          text: inputValue.trim(),
+          timestamp: new Date(),
+          tags,
+        };
+        setNotes([newNote, ...notes]);
+        setInputValue('');
+        setSuggestions([]);
+        setSuggestionIndex(-1);
+        inputRef.current?.focus();
+      }
     }
+  };
+
+  const handleExtendedNoteSave = (fields: Record<string, string>, tags: string[]) => {
+    if (!extendedTemplate) return;
+    const newNote: Note = {
+      id: Date.now().toString(),
+      text: '',
+      timestamp: new Date(),
+      tags,
+      template: extendedTemplate,
+      fields,
+    };
+    setNotes([newNote, ...notes]);
+    setInputMode('quick');
+    setExtendedTemplate(null);
+    setExtendedTags([]);
+    setInputValue('');
+    setSuggestions([]);
+    setSuggestionIndex(-1);
+    inputRef.current?.focus();
+  };
+
+  const handleExtendedNoteCancel = () => {
+    setInputMode('quick');
+    setExtendedTemplate(null);
+    setExtendedTags([]);
+    setInputValue('');
+    inputRef.current?.focus();
   };
 
   const handleDeleteNote = (id: string) => {
@@ -331,15 +384,17 @@ export default function Home() {
                 Keyboard-first note app. Press <kbd className="bg-card text-foreground px-2 py-1 rounded text-xs border border-border">Ctrl+K</kbd> to add, <kbd className="bg-card text-foreground px-2 py-1 rounded text-xs border border-border">Ctrl+F</kbd> to search.
               </p>
             </div>
-            <div className="flex-shrink-0 flex gap-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowHelp(true)}
+                className="flex-shrink-0 p-2 text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 rounded-md transition-colors"
+                title="Help (?)">
+                <HelpCircle size={20} />
+              </button>
               <button
                 onClick={toggleKawaii}
-                className={`p-2 rounded-md transition-colors ${
-                  isKawaii
-                    ? 'text-accent bg-accent/20 hover:bg-accent/30'
-                    : 'text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80'
-                }`}
-                title={isKawaii ? 'Disable kawaii mode' : 'Enable kawaii mode'}
+                className="flex-shrink-0 p-2 text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 rounded-md transition-colors"
+                title="Toggle kawaii mode"
               >
                 <Sparkles size={20} />
               </button>
@@ -364,69 +419,83 @@ export default function Home() {
       <main className="flex-1 px-4 sm:px-6 py-8">
         <div className="max-w-2xl mx-auto">
           {/* Input Section */}
-          <div className="mb-8">
-            <div className="soft-shadow rounded-lg bg-card p-6 relative">
-              <label htmlFor="note-input" className="block text-sm font-label text-muted-foreground mb-3">
-                Quick Note
-              </label>
-              <div className="relative">
-                <input
-                  ref={inputRef}
-                  id="note-input"
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleNoteInputKeyDown}
-                  placeholder="Type your thought and press Enter... (use #tag for categories)"
-                  className="w-full bg-background text-foreground placeholder-muted-foreground border border-border rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-card transition-all"
-                />
+          {inputMode === 'quick' && (
+            <div className="mb-8">
+              <div className="soft-shadow rounded-lg bg-card p-6 relative">
+                <label htmlFor="note-input" className="block text-sm font-label text-muted-foreground mb-3">
+                  Quick Note
+                </label>
+                <div className="relative">
+                  <input
+                    ref={inputRef}
+                    id="note-input"
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleNoteInputKeyDown}
+                    placeholder="Type your thought and press Enter... (use #tag for categories)"
+                    className="w-full bg-background text-foreground placeholder-muted-foreground border border-border rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-card transition-all"
+                  />
 
-                {/* Tag Suggestions Dropdown */}
-                {suggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-md shadow-lg z-10 overflow-hidden">
-                    {suggestions.map((suggestion, index) => (
-                      <button
-                        key={suggestion}
-                        onClick={() => insertSuggestion(suggestion)}
-                        onMouseEnter={() => setSuggestionIndex(index)}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                          index === suggestionIndex
-                            ? 'bg-accent text-accent-foreground'
-                            : 'bg-card text-foreground hover:bg-secondary'
-                        }`}
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                    <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border">
-                      Press <kbd className="bg-background text-foreground px-1 rounded">↓</kbd> <kbd className="bg-background text-foreground px-1 rounded">↑</kbd> to navigate, <kbd className="bg-background text-foreground px-1 rounded">Tab</kbd> to select
+                  {/* Tag Suggestions Dropdown */}
+                  {suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-md shadow-lg z-10 overflow-hidden">
+                      {suggestions.map((suggestion, index) => (
+                        <button
+                          key={suggestion}
+                          onClick={() => insertSuggestion(suggestion)}
+                          onMouseEnter={() => setSuggestionIndex(index)}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                            index === suggestionIndex
+                              ? 'bg-accent text-accent-foreground'
+                              : 'bg-card text-foreground hover:bg-secondary'
+                          }`}
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                      <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border">
+                        Press <kbd className="bg-background text-foreground px-1 rounded">↓</kbd> <kbd className="bg-background text-foreground px-1 rounded">↑</kbd> to navigate, <kbd className="bg-background text-foreground px-1 rounded">Tab</kbd> to select
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-3 flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                  {inputValue.length} characters
-                  {extractTags(inputValue).length > 0 && (
-                    <span className="ml-2">
-                      • {extractTags(inputValue).length} tag{extractTags(inputValue).length !== 1 ? 's' : ''}
-                    </span>
                   )}
-                </p>
-                <button
-                  onClick={handleAddNote}
-                  disabled={!inputValue.trim()}
-                  className="px-4 py-2 bg-accent text-accent-foreground rounded-md font-label text-sm hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Save (Enter)
-                </button>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    {inputValue.length} characters
+                    {extractTags(inputValue).length > 0 && (
+                      <span className="ml-2">
+                        • {extractTags(inputValue).length} tag{extractTags(inputValue).length !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </p>
+                  <button
+                    onClick={handleAddNote}
+                    disabled={!inputValue.trim()}
+                    className="px-4 py-2 bg-accent text-accent-foreground rounded-md font-label text-sm hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Save (Enter)
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Extended Mode Form */}
+          {inputMode === 'extended' && extendedTemplate && (
+            <div className="mb-8">
+              <ExtendedNoteForm
+                template={TEMPLATES[extendedTemplate]}
+                onSave={handleExtendedNoteSave}
+                onCancel={handleExtendedNoteCancel}
+                initialTags={extendedTags}
+              />
+            </div>
+          )}
 
           {/* Search Section */}
-          {notes.length > 0 && (
+          {notes.length > 0 && inputMode === 'quick' && (
             <div className="mb-6">
               <div className="soft-shadow rounded-lg bg-card p-4 relative">
                 <div className="flex items-center gap-2">
@@ -445,7 +514,7 @@ export default function Home() {
                       className="p-1 text-muted-foreground hover:text-foreground transition-colors"
                       title="Clear search"
                     >
-                      <X size={16} />
+                      <X size={18} />
                     </button>
                   )}
                 </div>
@@ -453,22 +522,9 @@ export default function Home() {
             </div>
           )}
 
-          {/* Tag Filter Section */}
-          {allTags.length > 0 && (
+          {/* Tags Filter */}
+          {allTags.length > 0 && inputMode === 'quick' && (
             <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-label text-sm text-foreground">
-                  Filter by tags
-                </h3>
-                {selectedTags.size > 0 && (
-                  <button
-                    onClick={clearFilters}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Clear filters
-                  </button>
-                )}
-              </div>
               <div className="flex flex-wrap gap-2">
                 {allTags.map(tag => {
                   const isSelected = selectedTags.has(tag);
@@ -476,10 +532,10 @@ export default function Home() {
                     <button
                       key={tag}
                       onClick={() => toggleTag(tag)}
-                      className={`px-3 py-1 rounded-full text-sm font-label transition-all ${
+                      className={`px-3 py-1 rounded-full text-xs font-label transition-all ${
                         isSelected
                           ? 'bg-accent text-accent-foreground'
-                          : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                          : 'bg-accent/20 text-accent hover:bg-accent/30'
                       }`}
                     >
                       {tag}
@@ -501,7 +557,7 @@ export default function Home() {
                   : `${filteredNotes.length} note${filteredNotes.length !== 1 ? 's' : ''}`}
               </h2>
               <div className="flex items-center gap-2">
-                {notes.length > 0 && (
+                {notes.length > 0 && inputMode === 'quick' && (
                   <button
                     onClick={toggleSortOrder}
                     className="flex items-center gap-1 px-3 py-1 text-xs font-label text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 rounded-md transition-all"
@@ -520,7 +576,7 @@ export default function Home() {
                     )}
                   </button>
                 )}
-                {hasActiveFilters && (
+                {hasActiveFilters && inputMode === 'quick' && (
                   <button
                     onClick={() => {
                       clearFilters();
@@ -541,7 +597,21 @@ export default function Home() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-foreground break-words">{note.text}</p>
+                      {note.template && note.fields ? (
+                        <div className="space-y-2">
+                          <p className="text-xs font-label text-muted-foreground">{TEMPLATES[note.template].name}</p>
+                          <div className="space-y-1">
+                            {Object.entries(note.fields).map(([key, value]) => (
+                              <div key={key}>
+                                <p className="text-xs text-muted-foreground capitalize">{key}:</p>
+                                <p className="text-foreground break-words">{value}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-foreground break-words">{note.text}</p>
+                      )}
                       <div className="flex flex-wrap gap-2 mt-3">
                         {note.tags.length > 0 && (
                           <>
@@ -671,12 +741,22 @@ export default function Home() {
               </div>
 
               <div className="border-t border-border pt-4">
+                <h3 className="font-label text-sm mb-2">Extended Mode Templates</h3>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li><span className="text-accent">#lang</span> - Language Learning (Original, Translation, Romaji, Pronunciation, Use case)</li>
+                  <li><span className="text-accent">#dev</span> - Tech Development (Product, Problem, Solution, Note)</li>
+                  <li><span className="text-accent">#read</span> - Reading & Highlights (Excerpt, Source, Page/URL, Category)</li>
+                </ul>
+              </div>
+
+              <div className="border-t border-border pt-4">
                 <h3 className="font-label text-sm mb-2">Tagging Tips</h3>
                 <ul className="text-xs text-muted-foreground space-y-1">
                   <li>Type #tag to add tags to notes</li>
                   <li>Tags appear as suggestions while you type</li>
                   <li>Click tags to filter notes by category</li>
                   <li>Search works on both note text and tags</li>
+                  <li>Use template tags (#lang, #dev, #read) for structured notes</li>
                 </ul>
               </div>
             </div>
