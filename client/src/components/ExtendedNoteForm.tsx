@@ -34,32 +34,33 @@ export function ExtendedNoteForm({
     setFields(prev => ({ ...prev, [fieldName]: value }));
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent, fieldIndex: number) => {
+  const handleKeyDown = (e: React.KeyboardEvent, fieldName: string) => {
     const allVisibleFields = showOptional ? template.fields : mandatoryFields;
+    const currentIndex = allVisibleFields.findIndex(f => f.name === fieldName);
 
     if (e.key === 'Tab') {
       e.preventDefault();
       
       if (e.shiftKey) {
         // Shift+Tab - previous field
-        if (fieldIndex > 0) {
-          const prevField = allVisibleFields[fieldIndex - 1];
+        if (currentIndex > 0) {
+          const prevField = allVisibleFields[currentIndex - 1];
           inputRefs.current[prevField.name]?.focus();
-          setCurrentFieldIndex(fieldIndex - 1);
+          setCurrentFieldIndex(currentIndex - 1);
         }
       } else {
         // Tab - next field or show optional fields
-        if (!showOptional && fieldIndex === mandatoryFields.length - 1 && optionalFields.length > 0) {
+        if (!showOptional && currentIndex === mandatoryFields.length - 1 && optionalFields.length > 0) {
           // Show optional fields
           setShowOptional(true);
           setTimeout(() => {
             inputRefs.current[optionalFields[0].name]?.focus();
             setCurrentFieldIndex(mandatoryFields.length);
           }, 0);
-        } else if (fieldIndex < allVisibleFields.length - 1) {
-          const nextField = allVisibleFields[fieldIndex + 1];
+        } else if (currentIndex < allVisibleFields.length - 1) {
+          const nextField = allVisibleFields[currentIndex + 1];
           inputRefs.current[nextField.name]?.focus();
-          setCurrentFieldIndex(fieldIndex + 1);
+          setCurrentFieldIndex(currentIndex + 1);
         }
       }
     } else if (e.ctrlKey && e.key === 'Enter') {
@@ -99,7 +100,7 @@ export function ExtendedNoteForm({
 
       {/* Form Fields */}
       <div className="space-y-4">
-        {visibleFields.map((field, index) => (
+        {visibleFields.map((field) => (
           <div key={field.name} className="space-y-1">
             <label className="text-sm font-medium text-foreground">
               {field.label}
@@ -111,7 +112,7 @@ export function ExtendedNoteForm({
                 }}
                 value={fields[field.name] || ''}
                 onChange={e => handleFieldChange(field.name, e.target.value)}
-                onKeyDown={e => handleKeyDown(e, index)}
+                onKeyDown={e => handleKeyDown(e, field.name)}
                 placeholder={field.placeholder}
                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent resize-none h-20"
               />
@@ -123,7 +124,7 @@ export function ExtendedNoteForm({
                 type="text"
                 value={fields[field.name] || ''}
                 onChange={e => handleFieldChange(field.name, e.target.value)}
-                onKeyDown={e => handleKeyDown(e, index)}
+                onKeyDown={e => handleKeyDown(e, field.name)}
                 placeholder={field.placeholder}
                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
               />
