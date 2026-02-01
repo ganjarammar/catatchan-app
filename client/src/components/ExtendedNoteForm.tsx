@@ -113,6 +113,7 @@ export function ExtendedNoteForm({
                 value={fields[field.name] || ''}
                 onChange={e => handleFieldChange(field.name, e.target.value)}
                 onKeyDown={e => handleKeyDown(e, field.name)}
+                onFocus={() => setCurrentFieldIndex(template.fields.findIndex(f => f.name === field.name))}
                 placeholder={field.placeholder}
                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent resize-none h-20"
               />
@@ -125,6 +126,7 @@ export function ExtendedNoteForm({
                 value={fields[field.name] || ''}
                 onChange={e => handleFieldChange(field.name, e.target.value)}
                 onKeyDown={e => handleKeyDown(e, field.name)}
+                onFocus={() => setCurrentFieldIndex(template.fields.findIndex(f => f.name === field.name))}
                 placeholder={field.placeholder}
                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
               />
