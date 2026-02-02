@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { X, ChevronDown } from 'lucide-react';
 import { Template, TemplateField } from '@/lib/templates';
 
@@ -9,12 +9,12 @@ interface ExtendedNoteFormProps {
   initialTags?: string[];
 }
 
-export function ExtendedNoteForm({
+const ExtendedNoteFormComponent = ({
   template,
   onSave,
   onCancel,
   initialTags = [],
-}: ExtendedNoteFormProps) {
+}: ExtendedNoteFormProps) => {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [showOptional, setShowOptional] = useState(false);
   const inputRefs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement>>({});
@@ -167,4 +167,6 @@ export function ExtendedNoteForm({
       </div>
     </div>
   );
-}
+};
+
+export const ExtendedNoteForm = memo(ExtendedNoteFormComponent);
