@@ -29,7 +29,7 @@ const ExtendedNoteFormComponent = ({
     }
   }, [mandatoryFields]);
 
-  const setInputRef = useCallback((fieldName: string) => (el: HTMLInputElement | HTMLTextAreaElement | null) => {
+  const handleRef = useCallback((fieldName: string, el: HTMLInputElement | HTMLTextAreaElement | null) => {
     if (el) {
       inputRefs.current[fieldName] = el;
     }
@@ -109,7 +109,7 @@ const ExtendedNoteFormComponent = ({
             </label>
             {field.name === 'usecase' || field.name === 'note' ? (
               <textarea
-                ref={setInputRef(field.name)}
+                ref={el => handleRef(field.name, el)}
                 value={fields[field.name] || ''}
                 onChange={e => handleFieldChange(field.name, e.target.value)}
                 onKeyDown={e => handleKeyDown(e, field.name)}
@@ -118,7 +118,7 @@ const ExtendedNoteFormComponent = ({
               />
             ) : (
               <input
-                ref={setInputRef(field.name)}
+                ref={el => handleRef(field.name, el)}
                 type="text"
                 value={fields[field.name] || ''}
                 onChange={e => handleFieldChange(field.name, e.target.value)}
