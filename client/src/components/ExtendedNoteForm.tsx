@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, ChevronDown } from 'lucide-react';
 import { Template, TemplateField } from '@/lib/templates';
 
@@ -28,6 +28,12 @@ export function ExtendedNoteForm({
       inputRefs.current[mandatoryFields[0].name].focus();
     }
   }, [mandatoryFields]);
+
+  const setInputRef = useCallback((fieldName: string) => (el: HTMLInputElement | HTMLTextAreaElement | null) => {
+    if (el) {
+      inputRefs.current[fieldName] = el;
+    }
+  }, []);
 
   const handleFieldChange = (fieldName: string, value: string) => {
     setFields(prev => ({ ...prev, [fieldName]: value }));
@@ -103,9 +109,7 @@ export function ExtendedNoteForm({
             </label>
             {field.name === 'usecase' || field.name === 'note' ? (
               <textarea
-                ref={el => {
-                  if (el) inputRefs.current[field.name] = el;
-                }}
+                ref={setInputRef(field.name)}
                 value={fields[field.name] || ''}
                 onChange={e => handleFieldChange(field.name, e.target.value)}
                 onKeyDown={e => handleKeyDown(e, field.name)}
@@ -114,9 +118,7 @@ export function ExtendedNoteForm({
               />
             ) : (
               <input
-                ref={el => {
-                  if (el) inputRefs.current[field.name] = el;
-                }}
+                ref={setInputRef(field.name)}
                 type="text"
                 value={fields[field.name] || ''}
                 onChange={e => handleFieldChange(field.name, e.target.value)}
