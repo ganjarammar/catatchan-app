@@ -32,14 +32,19 @@ const ExtendedNoteFormComponent = ({
   const handleRef = useCallback((fieldName: string, el: HTMLInputElement | HTMLTextAreaElement | null) => {
     if (el) {
       inputRefs.current[fieldName] = el;
+      
+      // Preserve focus if this was the active field
+      if (document.activeElement?.getAttribute('data-field-name') === fieldName) {
+        el.focus();
+      }
     }
   }, []);
 
-  const handleFieldChange = (fieldName: string, value: string) => {
+  const handleFieldChange = useCallback((fieldName: string, value: string) => {
     setFields(prev => ({ ...prev, [fieldName]: value }));
-  };
+  }, []);
 
-  const handleKeyDown = (e: React.KeyboardEvent, fieldName: string) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, fieldName: string) => {
     const allVisibleFields = showOptional ? template.fields : mandatoryFields;
     const currentIndex = allVisibleFields.findIndex(f => f.name === fieldName);
 
@@ -72,7 +77,7 @@ const ExtendedNoteFormComponent = ({
       // Esc - cancel
       onCancel();
     }
-  };
+  }, [showOptional, mandatoryFields, optionalFields, onCancel]);
 
   const handleSave = () => {
     // Check mandatory fields
@@ -110,6 +115,7 @@ const ExtendedNoteFormComponent = ({
             {field.name === 'usecase' || field.name === 'note' ? (
               <textarea
                 ref={el => handleRef(field.name, el)}
+                data-field-name={field.name}
                 value={fields[field.name] || ''}
                 onChange={e => handleFieldChange(field.name, e.target.value)}
                 onKeyDown={e => handleKeyDown(e, field.name)}
@@ -119,6 +125,7 @@ const ExtendedNoteFormComponent = ({
             ) : (
               <input
                 ref={el => handleRef(field.name, el)}
+                data-field-name={field.name}
                 type="text"
                 value={fields[field.name] || ''}
                 onChange={e => handleFieldChange(field.name, e.target.value)}
