@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun, HelpCircle, Pin, Sparkles, Cat } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ExtendedNoteForm } from '@/components/ExtendedNoteForm';
-import { detectTemplateTag, TEMPLATES, TemplateType, extractTags, getCurrentTag } from '@/lib/templates';
+import { detectTemplateTag, TEMPLATES, TemplateType, extractTags, getCurrentTag, getTemplateByTag } from '@/lib/templates';
 
 /**
  * Design Philosophy: Warm Minimalism with Personality
@@ -71,15 +71,17 @@ export default function Home() {
       return [];
     }
 
+    // If the tag already matches a valid template exactly, don't suggest anything
+    if (getTemplateByTag(currentTag)) {
+      return [];
+    }
+
     // Special case for template discovery
     if (currentTag.startsWith('#ext:')) {
       const query = currentTag.slice(5);
       return Object.values(TEMPLATES)
         .map(t => t.tag)
-        .filter(tag =>
-          tag.slice(1).startsWith(query) &&
-          tag.toLowerCase() !== currentTag // Filter exact matches
-        );
+        .filter(tag => tag.slice(1).startsWith(query));
     }
 
     const allTagsList = getAllTags();
