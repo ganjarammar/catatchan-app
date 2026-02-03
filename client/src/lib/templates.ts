@@ -190,10 +190,8 @@ export function getCurrentTag(text: string): string {
 }
 
 /**
- * Strip template tags from text
+ * Strip all tags from text
  */
-export function stripTemplateTags(text: string): string {
-  return text.replace(/#[\w:]+/g, (match) => {
-    return isTemplateTag(match) ? '' : match;
-  }).replace(/\s+/g, ' ').trim();
+export function stripAllTags(text: string): string {
+  return text.replace(/#[\w:]+/g, '').replace(/\s+/g, ' ').trim();
 }

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, memo, useMemo } from 'react';
 import { X, ChevronDown } from 'lucide-react';
-import { Template, TemplateField, extractTags, getCurrentTag, isTemplateTag, TEMPLATES } from '@/lib/templates';
+import { Template, TemplateField, extractTags, getCurrentTag, isTemplateTag, TEMPLATES, stripAllTags } from '@/lib/templates';
 interface ExtendedNoteFormProps {
   template: Template;
   onSave: (fields: Record<string, string>, tags: string[]) => void;
@@ -97,14 +97,21 @@ const ExtendedNoteFormComponent = ({
       return;
     }
 
-    // Extract tags from ALL fields
+    // Extract tags from ALL fields BEFORE stripping
     const allText = Object.values(fields).join(' ');
     const extracted = extractTags(allText);
 
-    // Merge with initial tags (if any)
-    const combinedTags = Array.from(new Set([...initialTags, ...extracted]));
+    // Create a NEW fields object with ALL tags stripped from the text
+    const cleanedFields: Record<string, string> = {};
+    Object.keys(fields).forEach(key => {
+      cleanedFields[key] = stripAllTags(fields[key]);
+    });
 
-    onSave(fields, combinedTags);
+    // Merge with initial tags and ENSURE no template tags are present
+    const combinedTags = Array.from(new Set([...initialTags, ...extracted]))
+      .filter(tag => !isTemplateTag(tag));
+
+    onSave(cleanedFields, combinedTags);
   }, [mandatoryFields, fields, onSave, initialTags]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, fieldName: string) => {
