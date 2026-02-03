@@ -107,12 +107,11 @@ const ExtendedNoteFormComponent = ({
       cleanedFields[key] = stripAllTags(fields[key]);
     });
 
-    // Merge with initial tags and ENSURE no template tags are present
-    const combinedTags = Array.from(new Set([...initialTags, ...extracted]))
-      .filter(tag => !isTemplateTag(tag));
+    // Merge with initial tags and ALWAYS include the template's own tag
+    const combinedTags = Array.from(new Set([template.tag, ...initialTags, ...extracted]));
 
     onSave(cleanedFields, combinedTags);
-  }, [mandatoryFields, fields, onSave, initialTags]);
+  }, [mandatoryFields, fields, onSave, initialTags, template.tag]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, fieldName: string) => {
     // Handle suggestions
