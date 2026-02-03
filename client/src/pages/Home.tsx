@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun, HelpCircle, Pin, Sparkles, Cat } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ExtendedNoteForm } from '@/components/ExtendedNoteForm';
+import { NoteCard } from '@/components/NoteCard';
 import { detectTemplateTag, TEMPLATES, TemplateType, extractTags, getCurrentTag, getTemplateByTag } from '@/lib/templates';
 
 /**
@@ -24,7 +25,7 @@ import { detectTemplateTag, TEMPLATES, TemplateType, extractTags, getCurrentTag,
  * - Keyboard-friendly interactions throughout
  */
 
-interface Note {
+export interface Note {
   id: string;
   text: string;
   timestamp: Date;
@@ -34,8 +35,8 @@ interface Note {
   fields?: Record<string, string>;
 }
 
-type SortOrder = 'newest' | 'oldest';
-type InputMode = 'quick' | 'extended';
+export type SortOrder = 'newest' | 'oldest';
+export type InputMode = 'quick' | 'extended';
 
 export default function Home() {
   const { theme, toggleTheme, toggleKawaii, isKawaii } = useTheme();
@@ -619,75 +620,17 @@ export default function Home() {
                 )}
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {filteredNotes.map((note) => (
-                <div
+                <NoteCard
                   key={note.id}
-                  className="soft-shadow rounded-lg bg-card p-4 hover:soft-shadow-hover transition-all group"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      {note.template && note.fields ? (
-                        <div className="space-y-2">
-                          <p className="text-xs font-label text-muted-foreground">{TEMPLATES[note.template].name}</p>
-                          <div className="space-y-1">
-                            {Object.entries(note.fields).map(([key, value]) => (
-                              <div key={key}>
-                                <p className="text-xs text-muted-foreground capitalize">{key}:</p>
-                                <p className="text-foreground break-words">{value}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-foreground break-words">{note.text}</p>
-                      )}
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {note.tags.length > 0 && (
-                          <>
-                            {note.tags.map(tag => {
-                              const isSelected = selectedTags.has(tag);
-                              return (
-                                <button
-                                  key={tag}
-                                  onClick={() => toggleTag(tag)}
-                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-label transition-all ${isSelected
-                                    ? 'bg-accent text-accent-foreground'
-                                    : 'bg-accent/20 text-accent hover:bg-accent/30'
-                                    }`}
-                                >
-                                  {tag}
-                                </button>
-                              );
-                            })}
-                          </>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {formatTime(note.timestamp)}
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0 flex gap-1">
-                      <button
-                        onClick={() => togglePin(note.id)}
-                        className={`p-2 transition-all ${note.isPinned
-                          ? 'text-accent'
-                          : 'text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100'
-                          }`}
-                        title={note.isPinned ? 'Unpin note' : 'Pin note'}
-                      >
-                        <Pin size={16} fill={note.isPinned ? 'currentColor' : 'none'} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteNote(note.id)}
-                        className="p-2 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                        title="Delete note"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  note={note}
+                  onDelete={handleDeleteNote}
+                  onTogglePin={togglePin}
+                  onToggleTag={toggleTag}
+                  formatTime={formatTime}
+                  selectedTags={selectedTags}
+                />
               ))}
             </div>
           </div>
