@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun, HelpCircle, Pin, Sparkles, Cat } from 'lucide-react';
+import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun, HelpCircle, Pin, Sparkles, Cat, Archive } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ExtendedNoteForm } from '@/components/ExtendedNoteForm';
-import { NoteCard } from '@/components/NoteCard';
+import { NoteCard, Note } from '@/components/NoteCard';
+import { EditNoteModal } from '@/components/EditNoteModal';
+import { NoteHistoryModal } from '@/components/NoteHistoryModal';
 import { detectTemplateTag, TEMPLATES, TemplateType, extractTags, getCurrentTag, getTemplateByTag } from '@/lib/templates';
 
 /**
@@ -25,15 +27,7 @@ import { detectTemplateTag, TEMPLATES, TemplateType, extractTags, getCurrentTag,
  * - Keyboard-friendly interactions throughout
  */
 
-export interface Note {
-  id: string;
-  text: string;
-  timestamp: Date;
-  tags: string[];
-  isPinned?: boolean;
-  template?: TemplateType;
-  fields?: Record<string, string>;
-}
+
 
 export type SortOrder = 'newest' | 'oldest';
 export type InputMode = 'quick' | 'extended';
@@ -47,7 +41,11 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionIndex, setSuggestionIndex] = useState(-1);
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
+
   const [showHelp, setShowHelp] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [historyNote, setHistoryNote] = useState<Note | null>(null);
   const [inputMode, setInputMode] = useState<InputMode>('quick');
   const [extendedTemplate, setExtendedTemplate] = useState<TemplateType | null>(null);
   const [extendedTags, setExtendedTags] = useState<string[]>([]);
@@ -138,7 +136,8 @@ export default function Home() {
 
   // Filter notes based on selected tags
   const getFilteredNotes = (): Note[] => {
-    let filtered = notes;
+    // First filter by archive status
+    let filtered = notes.filter(note => !!note.isArchived === showArchived);
 
     // Apply tag filter
     if (selectedTags.size > 0) {
@@ -171,6 +170,8 @@ export default function Home() {
         setNotes(parsed.map((note: any) => ({
           ...note,
           timestamp: new Date(note.timestamp),
+          lastEdited: note.lastEdited ? new Date(note.lastEdited) : undefined,
+          history: note.history || [],
           tags: note.tags || [],
         })));
       } catch (e) {
@@ -309,6 +310,36 @@ export default function Home() {
 
   const handleDeleteNote = (id: string) => {
     setNotes(notes.filter(note => note.id !== id));
+  };
+
+  const handleArchiveNote = (id: string) => {
+    setNotes(notes.map(note =>
+      note.id === id ? { ...note, isArchived: !note.isArchived } : note
+    ));
+  };
+
+  const handleEditSave = (updatedNoteData: Partial<Note>) => {
+    if (!editingNote) return;
+
+    setNotes(notes.map(note => {
+      if (note.id === editingNote.id) {
+        // Create history entry from current state
+        const historyEntry = {
+          timestamp: new Date(),
+          text: note.text,
+          fields: note.fields
+        };
+
+        return {
+          ...note,
+          ...updatedNoteData,
+          lastEdited: new Date(),
+          history: [...(note.history || []), historyEntry]
+        };
+      }
+      return note;
+    }));
+    setEditingNote(null);
   };
 
   const insertSuggestion = (suggestion: string) => {
@@ -607,6 +638,20 @@ export default function Home() {
                     )}
                   </button>
                 )}
+
+
+                <button
+                  onClick={() => setShowArchived(!showArchived)}
+                  className={`flex items-center gap-1 px-3 py-1 text-xs font-label rounded-md transition-all ${showArchived
+                    ? 'bg-accent text-accent-foreground'
+                    : 'bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground'
+                    }`}
+                  title={showArchived ? "Show active notes" : "Show archived notes"}
+                >
+                  <Archive size={14} />
+                  {showArchived ? 'Archived' : 'Archive'}
+                </button>
+
                 {hasActiveFilters && inputMode === 'quick' && (
                   <button
                     onClick={() => {
@@ -628,6 +673,10 @@ export default function Home() {
                   onDelete={handleDeleteNote}
                   onTogglePin={togglePin}
                   onToggleTag={toggleTag}
+
+                  onEdit={(note) => setEditingNote(note)}
+                  onArchive={handleArchiveNote}
+                  onViewHistory={(note) => setHistoryNote(note)}
                   formatTime={formatTime}
                   selectedTags={selectedTags}
                 />
@@ -636,6 +685,24 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {/* Modals */}
+      {editingNote && (
+        <EditNoteModal
+          note={editingNote}
+          onSave={handleEditSave}
+          onClose={() => setEditingNote(null)}
+          allTags={allTags}
+        />
+      )}
+
+      {historyNote && (
+        <NoteHistoryModal
+          note={historyNote}
+          onClose={() => setHistoryNote(null)}
+          formatTime={formatTime}
+        />
+      )}
 
       {/* Footer */}
       <footer className="border-t border-border py-4 px-4 sm:px-6 text-center text-xs text-muted-foreground">

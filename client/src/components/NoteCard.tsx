@@ -1,6 +1,12 @@
 import { memo, useMemo } from 'react';
-import { Pin, Trash2, Clock, BookOpen, Code, Highlighter, Quote, Globe, MessageSquare, Tag as TagIcon } from 'lucide-react';
+import { Pin, Trash2, Clock, BookOpen, Code, Highlighter, Quote, Globe, MessageSquare, Tag as TagIcon, Edit2, Archive, History } from 'lucide-react';
 import { TEMPLATES, TemplateType } from '@/lib/templates';
+
+export interface NoteVersion {
+    timestamp: Date;
+    text: string;
+    fields?: Record<string, string>;
+}
 
 interface Note {
     id: string;
@@ -8,8 +14,11 @@ interface Note {
     timestamp: Date;
     tags: string[];
     isPinned?: boolean;
+    isArchived?: boolean;
     template?: TemplateType;
     fields?: Record<string, string>;
+    history?: NoteVersion[];
+    lastEdited?: Date;
 }
 
 interface NoteCardProps {
@@ -17,6 +26,9 @@ interface NoteCardProps {
     onDelete: (id: string) => void;
     onTogglePin: (id: string) => void;
     onToggleTag: (tag: string) => void;
+    onEdit: (note: Note) => void;
+    onArchive: (id: string) => void;
+    onViewHistory: (note: Note) => void;
     formatTime: (date: Date) => string;
     selectedTags: Set<string>;
 }
@@ -35,6 +47,9 @@ const NoteCardComponent = ({
     onDelete,
     onTogglePin,
     onToggleTag,
+    onEdit,
+    onArchive,
+    onViewHistory,
     formatTime,
     selectedTags
 }: NoteCardProps) => {
@@ -90,6 +105,33 @@ const NoteCardComponent = ({
                     >
                         <Pin size={14} fill={note.isPinned ? 'currentColor' : 'none'} />
                     </button>
+
+                    <button
+                        onClick={() => onEdit(note)}
+                        className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                        title="Edit"
+                    >
+                        <Edit2 size={14} />
+                    </button>
+
+                    {note.history && note.history.length > 0 && (
+                        <button
+                            onClick={() => onViewHistory(note)}
+                            className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                            title="View History"
+                        >
+                            <History size={14} />
+                        </button>
+                    )}
+
+                    <button
+                        onClick={() => onArchive(note.id)}
+                        className={`p-1.5 rounded-md hover:bg-secondary transition-colors ${note.isArchived ? 'text-accent' : 'text-muted-foreground hover:text-foreground'}`}
+                        title={note.isArchived ? 'Unarchive' : 'Archive'}
+                    >
+                        <Archive size={14} />
+                    </button>
+
                     <button
                         onClick={() => onDelete(note.id)}
                         className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
