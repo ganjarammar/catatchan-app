@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { useState, useRef, useEffect, useCallback, memo, useMemo } from 'react';
 import { X, ChevronDown } from 'lucide-react';
 import { Template, TemplateField } from '@/lib/templates';
 
@@ -19,8 +19,8 @@ const ExtendedNoteFormComponent = ({
   const [showOptional, setShowOptional] = useState(false);
   const inputRefs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement>>({});
 
-  const mandatoryFields = template.fields.filter(f => f.mandatory);
-  const optionalFields = template.fields.filter(f => !f.mandatory);
+  const mandatoryFields = useMemo(() => template.fields.filter(f => f.mandatory), [template]);
+  const optionalFields = useMemo(() => template.fields.filter(f => !f.mandatory), [template]);
 
   useEffect(() => {
     // Focus first field on mount
@@ -32,7 +32,7 @@ const ExtendedNoteFormComponent = ({
   const handleRef = useCallback((fieldName: string, el: HTMLInputElement | HTMLTextAreaElement | null) => {
     if (el) {
       inputRefs.current[fieldName] = el;
-      
+
       // Preserve focus if this was the active field
       if (document.activeElement?.getAttribute('data-field-name') === fieldName) {
         el.focus();
@@ -50,7 +50,7 @@ const ExtendedNoteFormComponent = ({
 
     if (e.key === 'Tab') {
       e.preventDefault();
-      
+
       if (e.shiftKey) {
         // Shift+Tab - previous field
         if (currentIndex > 0) {
