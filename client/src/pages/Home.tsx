@@ -63,7 +63,7 @@ export default function Home() {
 
   // Get the current tag being typed (the last #tag in the input)
   const getCurrentTag = (text: string): string => {
-    const tagRegex = /#[\w]*$/;
+    const tagRegex = /#[\w:]*$/;
     const match = text.match(tagRegex);
     return match ? match[0] : '';
   };
@@ -82,6 +82,14 @@ export default function Home() {
     const currentTag = getCurrentTag(input);
     if (!currentTag || currentTag.length < 2) {
       return [];
+    }
+
+    // Special case for template discovery
+    if (currentTag.startsWith('#ext:')) {
+      const query = currentTag.slice(5).toLowerCase();
+      return Object.values(TEMPLATES)
+        .map(t => t.tag)
+        .filter(tag => tag.slice(1).startsWith(query));
     }
 
     const allTags = getAllTags();
@@ -467,12 +475,17 @@ export default function Home() {
                           key={suggestion}
                           onClick={() => insertSuggestion(suggestion)}
                           onMouseEnter={() => setSuggestionIndex(index)}
-                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${index === suggestionIndex
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between ${index === suggestionIndex
                             ? 'bg-accent text-accent-foreground'
                             : 'bg-card text-foreground hover:bg-secondary'
                             }`}
                         >
-                          {suggestion}
+                          <span className="font-medium">{suggestion}</span>
+                          {Object.values(TEMPLATES).some(t => t.tag === suggestion) && (
+                            <span className={`text-xs ${index === suggestionIndex ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>
+                              {Object.values(TEMPLATES).find(t => t.tag === suggestion)?.name}
+                            </span>
+                          )}
                         </button>
                       ))}
                       <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border">
