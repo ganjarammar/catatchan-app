@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 import { Pin, Trash2, Clock, BookOpen, Code, Highlighter, Quote, Globe, MessageSquare, Tag as TagIcon, Edit2, Archive, History } from 'lucide-react';
 import { TEMPLATES, TemplateType } from '@/lib/templates';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface NoteVersion {
     timestamp: Date;
@@ -90,25 +91,35 @@ const NoteCardComponent = ({
                             </span>
                         </div>
                     )}
-                    <div
-                        className="flex items-center gap-1 text-[10px] text-muted-foreground/60 font-medium cursor-help"
-                        title={note.lastEdited
-                            ? `Created: ${formatTime(note.timestamp)}\nLast Edited: ${formatTime(note.lastEdited)}`
-                            : `Created: ${formatTime(note.timestamp)}`
-                        }
-                    >
-                        {note.lastEdited ? (
-                            <div className="flex items-center gap-1 text-accent/80">
-                                <Edit2 size={10} />
-                                <span>Edited {formatTime(note.lastEdited)}</span>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60 font-medium cursor-help">
+                                {note.lastEdited ? (
+                                    <div className="flex items-center gap-1 text-accent/80">
+                                        <Edit2 size={10} />
+                                        <span>Edited {formatTime(note.lastEdited)}</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-1">
+                                        <Clock size={10} />
+                                        <span>{formatTime(note.timestamp)}</span>
+                                    </div>
+                                )}
                             </div>
-                        ) : (
-                            <div className="flex items-center gap-1">
-                                <Clock size={10} />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" align="start" className="flex flex-col gap-1 py-2">
+                            <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">Created:</span>
                                 <span>{formatTime(note.timestamp)}</span>
                             </div>
-                        )}
-                    </div>
+                            {note.lastEdited && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-accent/80 font-medium">Last Edited:</span>
+                                    <span>{formatTime(note.lastEdited)}</span>
+                                </div>
+                            )}
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
 
                 {/* Action Buttons (Visible on hover) */}
