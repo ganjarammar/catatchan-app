@@ -44,6 +44,17 @@ const ExtendedNoteFormComponent = ({
     setFields(prev => ({ ...prev, [fieldName]: value }));
   }, []);
 
+  const handleSave = useCallback(() => {
+    // Check mandatory fields
+    const missingMandatory = mandatoryFields.filter(f => !fields[f.name]?.trim());
+    if (missingMandatory.length > 0) {
+      alert(`Please fill in: ${missingMandatory.map(f => f.label).join(', ')}`);
+      return;
+    }
+
+    onSave(fields, initialTags);
+  }, [mandatoryFields, fields, onSave, initialTags]);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent, fieldName: string) => {
     const allVisibleFields = showOptional ? template.fields : mandatoryFields;
     const currentIndex = allVisibleFields.findIndex(f => f.name === fieldName);
@@ -77,18 +88,7 @@ const ExtendedNoteFormComponent = ({
       // Esc - cancel
       onCancel();
     }
-  }, [showOptional, mandatoryFields, optionalFields, onCancel]);
-
-  const handleSave = () => {
-    // Check mandatory fields
-    const missingMandatory = mandatoryFields.filter(f => !fields[f.name]?.trim());
-    if (missingMandatory.length > 0) {
-      alert(`Please fill in: ${missingMandatory.map(f => f.label).join(', ')}`);
-      return;
-    }
-
-    onSave(fields, initialTags);
-  };
+  }, [showOptional, template.fields, mandatoryFields, optionalFields, handleSave, onCancel]);
 
   const visibleFields = showOptional ? template.fields : mandatoryFields;
 
