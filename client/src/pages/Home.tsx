@@ -66,26 +66,30 @@ export default function Home() {
 
   // Get tag suggestions based on current input
   const getTagSuggestions = (input: string): string[] => {
-    const currentTag = getCurrentTag(input);
+    const currentTag = getCurrentTag(input).toLowerCase();
     if (!currentTag || currentTag.length < 2) {
       return [];
     }
 
     // Special case for template discovery
     if (currentTag.startsWith('#ext:')) {
-      const query = currentTag.slice(5).toLowerCase();
+      const query = currentTag.slice(5);
       return Object.values(TEMPLATES)
         .map(t => t.tag)
-        .filter(tag => tag.slice(1).startsWith(query));
+        .filter(tag =>
+          tag.slice(1).startsWith(query) &&
+          tag.toLowerCase() !== currentTag // Filter exact matches
+        );
     }
 
     const allTagsList = getAllTags();
-    const alreadyUsedTags = extractTags(input);
+    const alreadyUsedTags = extractTags(input, true); // Include template tags to avoid re-suggesting
 
     return allTagsList
       .filter(tag =>
-        tag.startsWith(currentTag.toLowerCase()) &&
-        !alreadyUsedTags.includes(tag)
+        tag.startsWith(currentTag) &&
+        !alreadyUsedTags.includes(tag) &&
+        tag.toLowerCase() !== currentTag // Filter exact matches
       )
       .slice(0, 5); // Limit to 5 suggestions
   };
