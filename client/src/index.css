@@ -78,6 +78,11 @@
   --sidebar-accent-foreground: #2a2620;
   --sidebar-border: #e8e5e0;
   --sidebar-ring: #d4a574;
+
+  /* Template Accents (Light) */
+  --lang: #5d93e8;
+  --dev: #50b38a;
+  --read: #d99a5e;
 }
 
 .dark {
@@ -113,6 +118,11 @@
   --sidebar-accent-foreground: #1a1815;
   --sidebar-border: #4a4440;
   --sidebar-ring: #d4a574;
+
+  /* Template Accents (Dark) */
+  --lang: #7b9ed9;
+  --dev: #7bc7ab;
+  --read: #b88a5d;
 }
 
 .kawaii {
@@ -150,15 +160,22 @@
   --sidebar-border: #f0d9f0;
   --sidebar-ring: #ff9ecb;
   --radius: 1.2rem;
+
+  /* Template Accents (Kawaii) */
+  --lang: #aecfff;
+  --dev: #b8f0d1;
+  --read: #ffd4a3;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [type="button"]:not(:disabled),
@@ -238,12 +255,15 @@
 }
 
 /* Smooth transitions for interactions */
-button, input, a {
+button,
+input,
+a {
   transition: all 200ms ease-out;
 }
 
 /* Focus state for keyboard navigation */
-input:focus, button:focus {
+input:focus,
+button:focus {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -254,9 +274,11 @@ input:focus, button:focus {
     opacity: 1;
     transform: translate(0, 0) scale(1);
   }
+
   50% {
     opacity: 0.8;
   }
+
   100% {
     opacity: 0;
     transform: translate(0, -30px) scale(0.3);

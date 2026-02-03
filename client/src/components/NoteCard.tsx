@@ -23,9 +23,9 @@ interface NoteCardProps {
 
 const getTemplateIcon = (type: TemplateType) => {
     switch (type) {
-        case 'lang': return <Globe size={14} className="text-blue-500" />;
-        case 'dev': return <Code size={14} className="text-green-500" />;
-        case 'read': return <BookOpen size={14} className="text-amber-500" />;
+        case 'lang': return <Globe size={14} style={{ color: 'var(--lang)' }} />;
+        case 'dev': return <Code size={14} style={{ color: 'var(--dev)' }} />;
+        case 'read': return <BookOpen size={14} style={{ color: 'var(--read)' }} />;
         default: return null;
     }
 };
@@ -58,9 +58,10 @@ const NoteCardComponent = ({
         <div className="relative soft-shadow rounded-xl bg-card border border-border/40 p-5 hover:soft-shadow-hover transition-all group overflow-hidden">
             {/* Decorative side accent for templates */}
             {template && (
-                <div className={`absolute left-0 top-0 bottom-0 w-1 ${template.id === 'lang' ? 'bg-blue-500' :
-                        template.id === 'dev' ? 'bg-green-500' : 'bg-amber-500'
-                    }`} />
+                <div
+                    className="absolute left-0 top-0 bottom-0 w-1"
+                    style={{ backgroundColor: `var(--${template.id})` }}
+                />
             )}
 
             {/* Header */}
@@ -114,7 +115,7 @@ const NoteCardComponent = ({
                                         {key}
                                     </p>
                                     <p className={`text-foreground break-words leading-relaxed ${key === 'original' || key === 'excerpt' || key === 'product' ? 'text-lg font-medium' :
-                                            key === 'translation' ? 'text-base italic text-muted-foreground' : 'text-sm'
+                                        key === 'translation' ? 'text-base italic text-muted-foreground' : 'text-sm'
                                         }`}>
                                         {value}
                                     </p>
@@ -135,10 +136,12 @@ const NoteCardComponent = ({
                         <button
                             key={tag}
                             onClick={() => onToggleTag(tag)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${selectedTags.has(tag)
-                                    ? 'bg-accent border-accent text-accent-foreground'
-                                    : 'bg-accent/5 border-accent/20 text-accent hover:bg-accent/10'
-                                }`}
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border"
+                            style={{
+                                backgroundColor: selectedTags.has(tag) ? `var(--${template?.id})` : 'transparent',
+                                borderColor: `var(--${template?.id})`,
+                                color: selectedTags.has(tag) ? 'white' : `var(--${template?.id})`
+                            }}
                         >
                             <TagIcon size={10} />
                             {tag}
@@ -151,8 +154,8 @@ const NoteCardComponent = ({
                             key={tag}
                             onClick={() => onToggleTag(tag)}
                             className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${selectedTags.has(tag)
-                                    ? 'bg-secondary-foreground text-secondary'
-                                    : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                                ? 'bg-secondary-foreground text-secondary'
+                                : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
                                 }`}
                         >
                             {tag}
