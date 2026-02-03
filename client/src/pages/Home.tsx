@@ -244,10 +244,10 @@ export default function Home() {
   const handleAddNote = () => {
     if (inputValue.trim()) {
       const tags = extractTags(inputValue);
-      const templateType = detectTemplateTag(inputValue);
-      if (templateType) {
+      const detection = detectTemplateTag(inputValue);
+      if (detection) {
+        const { type: templateType, raw: templateTag } = detection;
         // Strip the template tag from the input value to preserve the rest of the text
-        const templateTag = TEMPLATES[templateType].tag;
         const remainingText = inputValue.replace(templateTag, '').trim();
 
         // Get the first field name for this template
@@ -343,9 +343,11 @@ export default function Home() {
         setSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
         return;
       }
-      if (e.key === 'Tab' || (e.key === 'Enter' && suggestionIndex >= 0)) {
+      if (e.key === 'Tab' || e.key === 'Enter') {
         e.preventDefault();
-        insertSuggestion(suggestions[suggestionIndex]);
+        // If one is highlighted, use it. Otherwise, use the first one.
+        const indexToUse = suggestionIndex >= 0 ? suggestionIndex : 0;
+        insertSuggestion(suggestions[indexToUse]);
         return;
       }
     }

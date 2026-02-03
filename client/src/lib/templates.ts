@@ -129,20 +129,31 @@ export const TEMPLATES: Record<TemplateType, Template> = {
  * Get template by tag
  */
 export function getTemplateByTag(tag: string): Template | null {
-  const templateId = tag.replace('#', '') as TemplateType;
-  return TEMPLATES[templateId] || null;
+  const normalizedTag = tag.toLowerCase();
+
+  // Direct match (e.g., #lang)
+  const directMatch = Object.values(TEMPLATES).find(t => t.tag.toLowerCase() === normalizedTag);
+  if (directMatch) return directMatch;
+
+  // Ext match (e.g., #ext:lang)
+  if (normalizedTag.startsWith('#ext:')) {
+    const templateId = normalizedTag.replace('#ext:', '') as TemplateType;
+    return TEMPLATES[templateId] || null;
+  }
+
+  return null;
 }
 
 /**
  * Detect template tags in text
- * Returns the first template tag found
+ * Returns the template type and the raw tag string found
  */
-export function detectTemplateTag(text: string): TemplateType | null {
-  const tags = text.match(/#\w+/g) || [];
+export function detectTemplateTag(text: string): { type: TemplateType; raw: string } | null {
+  const tags = text.match(/#[\w:]+/g) || [];
   for (const tag of tags) {
     const template = getTemplateByTag(tag);
     if (template) {
-      return template.id;
+      return { type: template.id, raw: tag };
     }
   }
   return null;
@@ -152,6 +163,6 @@ export function detectTemplateTag(text: string): TemplateType | null {
  * Extract all tags from text
  */
 export function extractTags(text: string): string[] {
-  const matches = text.match(/#\w+/g) || [];
+  const matches = text.match(/#[\w:]+/g) || [];
   return Array.from(new Set(matches)); // Remove duplicates
 }
