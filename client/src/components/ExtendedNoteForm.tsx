@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect, useCallback, memo, useMemo } from 'react';
 import { X, ChevronDown } from 'lucide-react';
-import { Template, TemplateField } from '@/lib/templates';
-
+import { Template, TemplateField, extractTags, getCurrentTag, isTemplateTag, TEMPLATES } from '@/lib/templates';
 interface ExtendedNoteFormProps {
   template: Template;
   onSave: (fields: Record<string, string>, tags: string[]) => void;
   onCancel: (currentFields: Record<string, string>) => void;
   initialTags?: string[];
   initialFields?: Record<string, string>;
+  allTags?: string[];
 }
 
 const ExtendedNoteFormComponent = ({
@@ -16,9 +16,13 @@ const ExtendedNoteFormComponent = ({
   onCancel,
   initialTags = [],
   initialFields = {},
+  allTags = [],
 }: ExtendedNoteFormProps) => {
   const [fields, setFields] = useState<Record<string, string>>(initialFields);
   const [showOptional, setShowOptional] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestionIndex, setSuggestionIndex] = useState(-1);
+  const [activeSuggestionField, setActiveSuggestionField] = useState<string | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement>>({});
 
   const mandatoryFields = useMemo(() => template.fields.filter(f => f.mandatory), [template]);
@@ -43,8 +47,47 @@ const ExtendedNoteFormComponent = ({
   }, []);
 
   const handleFieldChange = useCallback((fieldName: string, value: string) => {
-    setFields(prev => ({ ...prev, [fieldName]: value }));
-  }, []);
+    // Prohibit template tags by stripping them on the fly
+    const strippedValue = value.replace(/#[\w:]+/g, (match) => {
+      return isTemplateTag(match) ? '' : match;
+    });
+
+    setFields(prev => ({ ...prev, [fieldName]: strippedValue }));
+
+    // Update suggestions
+    const currentTag = getCurrentTag(strippedValue);
+    if (currentTag && currentTag.length >= 2) {
+      const fieldTags = extractTags(strippedValue);
+      const filteredSuggestions = allTags
+        .filter(tag =>
+          tag.startsWith(currentTag.toLowerCase()) &&
+          !fieldTags.includes(tag) &&
+          !isTemplateTag(tag)
+        )
+        .slice(0, 5);
+
+      setSuggestions(filteredSuggestions);
+      setSuggestionIndex(-1);
+      setActiveSuggestionField(fieldName);
+    } else {
+      setSuggestions([]);
+      setSuggestionIndex(-1);
+      setActiveSuggestionField(null);
+    }
+  }, [allTags]);
+
+  const insertSuggestion = useCallback((fieldName: string, suggestion: string) => {
+    const currentValue = fields[fieldName] || '';
+    const currentTag = getCurrentTag(currentValue);
+    if (currentTag) {
+      const newValue = currentValue.slice(0, -currentTag.length) + suggestion;
+      setFields(prev => ({ ...prev, [fieldName]: newValue }));
+      setSuggestions([]);
+      setSuggestionIndex(-1);
+      setActiveSuggestionField(null);
+      inputRefs.current[fieldName]?.focus();
+    }
+  }, [fields]);
 
   const handleSave = useCallback(() => {
     // Check mandatory fields
@@ -54,10 +97,39 @@ const ExtendedNoteFormComponent = ({
       return;
     }
 
-    onSave(fields, initialTags);
+    // Extract tags from ALL fields
+    const allText = Object.values(fields).join(' ');
+    const extracted = extractTags(allText);
+
+    // Merge with initial tags (if any)
+    const combinedTags = Array.from(new Set([...initialTags, ...extracted]));
+
+    onSave(fields, combinedTags);
   }, [mandatoryFields, fields, onSave, initialTags]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, fieldName: string) => {
+    // Handle suggestions
+    if (activeSuggestionField === fieldName && suggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSuggestionIndex(prev =>
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        );
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+        return;
+      }
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        const indexToUse = suggestionIndex >= 0 ? suggestionIndex : 0;
+        insertSuggestion(fieldName, suggestions[indexToUse]);
+        return;
+      }
+    }
+
     const allVisibleFields = showOptional ? template.fields : mandatoryFields;
     const currentIndex = allVisibleFields.findIndex(f => f.name === fieldName);
 
@@ -88,9 +160,15 @@ const ExtendedNoteFormComponent = ({
       handleSave();
     } else if (e.key === 'Escape') {
       // Esc - cancel
-      onCancel(fields);
+      if (suggestions.length > 0) {
+        setSuggestions([]);
+        setSuggestionIndex(-1);
+        setActiveSuggestionField(null);
+      } else {
+        onCancel(fields);
+      }
     }
-  }, [showOptional, template.fields, mandatoryFields, optionalFields, handleSave, onCancel, fields]);
+  }, [showOptional, template.fields, mandatoryFields, optionalFields, handleSave, onCancel, fields, activeSuggestionField, suggestions, suggestionIndex, insertSuggestion]);
 
   const visibleFields = showOptional ? template.fields : mandatoryFields;
 
@@ -110,7 +188,7 @@ const ExtendedNoteFormComponent = ({
       {/* Form Fields */}
       <div className="space-y-4">
         {visibleFields.map((field) => (
-          <div key={field.name} className="space-y-1">
+          <div key={field.name} className="space-y-1 relative">
             <label className="text-sm font-medium text-foreground">
               {field.label}
             </label>
@@ -135,6 +213,25 @@ const ExtendedNoteFormComponent = ({
                 placeholder={field.placeholder}
                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
               />
+            )}
+
+            {/* Tag Suggestions Dropdown */}
+            {activeSuggestionField === field.name && suggestions.length > 0 && (
+              <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-card border border-border rounded-md shadow-lg z-20 overflow-hidden">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={suggestion}
+                    onClick={() => insertSuggestion(field.name, suggestion)}
+                    onMouseEnter={() => setSuggestionIndex(index)}
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between ${index === suggestionIndex
+                      ? 'bg-accent text-accent-foreground'
+                      : 'bg-card text-foreground hover:bg-secondary'
+                      }`}
+                  >
+                    <span className="font-medium">{suggestion}</span>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         ))}

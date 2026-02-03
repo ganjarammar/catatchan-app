@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun, HelpCircle, Pin, Sparkles, Cat } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ExtendedNoteForm } from '@/components/ExtendedNoteForm';
-import { detectTemplateTag, TEMPLATES, TemplateType } from '@/lib/templates';
+import { detectTemplateTag, TEMPLATES, TemplateType, extractTags, getCurrentTag } from '@/lib/templates';
 
 /**
  * Design Philosophy: Warm Minimalism with Personality
@@ -54,19 +54,6 @@ export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Extract tags from text (e.g., #work, #ideas)
-  const extractTags = (text: string): string[] => {
-    const tagRegex = /#[\w]+/g;
-    const matches = text.match(tagRegex) || [];
-    return Array.from(new Set(matches.map(tag => tag.toLowerCase())));
-  };
-
-  // Get the current tag being typed (the last #tag in the input)
-  const getCurrentTag = (text: string): string => {
-    const tagRegex = /#[\w:]*$/;
-    const match = text.match(tagRegex);
-    return match ? match[0] : '';
-  };
 
   // Get all unique tags from notes, sorted by recency
   const getAllTags = (): string[] => {
@@ -92,10 +79,10 @@ export default function Home() {
         .filter(tag => tag.slice(1).startsWith(query));
     }
 
-    const allTags = getAllTags();
+    const allTagsList = getAllTags();
     const alreadyUsedTags = extractTags(input);
 
-    return allTags
+    return allTagsList
       .filter(tag =>
         tag.startsWith(currentTag.toLowerCase()) &&
         !alreadyUsedTags.includes(tag)
@@ -527,6 +514,7 @@ export default function Home() {
                 onCancel={handleExtendedNoteCancel}
                 initialTags={extendedTags}
                 initialFields={extendedFields}
+                allTags={getAllTags()}
               />
             </div>
           )}

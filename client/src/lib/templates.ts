@@ -145,6 +145,13 @@ export function getTemplateByTag(tag: string): Template | null {
 }
 
 /**
+ * Check if a tag is a template tag
+ */
+export function isTemplateTag(tag: string): boolean {
+  return getTemplateByTag(tag) !== null || tag.toLowerCase().startsWith('#ext:');
+}
+
+/**
  * Detect template tags in text
  * Returns the template type and the raw tag string found
  */
@@ -160,9 +167,33 @@ export function detectTemplateTag(text: string): { type: TemplateType; raw: stri
 }
 
 /**
- * Extract all tags from text
+ * Extract all tags from text, excluding template tags
  */
-export function extractTags(text: string): string[] {
+export function extractTags(text: string, includeTemplates: boolean = false): string[] {
   const matches = text.match(/#[\w:]+/g) || [];
-  return Array.from(new Set(matches)); // Remove duplicates
+  const tags = matches.map(tag => tag.toLowerCase());
+
+  const filtered = includeTemplates
+    ? tags
+    : tags.filter(tag => !isTemplateTag(tag));
+
+  return Array.from(new Set(filtered)); // Remove duplicates
+}
+
+/**
+ * Get the current tag being typed (the last #tag in the text)
+ */
+export function getCurrentTag(text: string): string {
+  const tagRegex = /#[\w:]*$/;
+  const match = text.match(tagRegex);
+  return match ? match[0] : '';
+}
+
+/**
+ * Strip template tags from text
+ */
+export function stripTemplateTags(text: string): string {
+  return text.replace(/#[\w:]+/g, (match) => {
+    return isTemplateTag(match) ? '' : match;
+  }).replace(/\s+/g, ' ').trim();
 }
