@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun, HelpCircle, Pin, Sparkles } from 'lucide-react';
+import { Trash2, Search, X, ArrowUp, ArrowDown, Moon, Sun, HelpCircle, Pin, Sparkles, Cat } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ExtendedNoteForm } from '@/components/ExtendedNoteForm';
 import { detectTemplateTag, TEMPLATES, TemplateType } from '@/lib/templates';
@@ -377,8 +377,9 @@ export default function Home() {
         <div className="max-w-2xl mx-auto">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h1 className="font-display text-3xl sm:text-4xl text-foreground">
+              <h1 className="font-display text-3xl sm:text-4xl text-foreground flex items-center gap-3">
                 Catatchan
+                <Cat size={32} className="text-accent transform -rotate-12" />
               </h1>
               <p className="text-muted-foreground text-sm mt-1">
                 Keyboard-first note app. Press <kbd className="bg-card text-foreground px-2 py-1 rounded text-xs border border-border">Ctrl+K</kbd> to add, <kbd className="bg-card text-foreground px-2 py-1 rounded text-xs border border-border">Ctrl+F</kbd> to search.
