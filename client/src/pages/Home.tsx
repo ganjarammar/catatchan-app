@@ -50,6 +50,7 @@ export default function Home() {
   const [inputMode, setInputMode] = useState<InputMode>('quick');
   const [extendedTemplate, setExtendedTemplate] = useState<TemplateType | null>(null);
   const [extendedTags, setExtendedTags] = useState<string[]>([]);
+  const [extendedFields, setExtendedFields] = useState<Record<string, string>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -85,10 +86,10 @@ export default function Home() {
 
     const allTags = getAllTags();
     const alreadyUsedTags = extractTags(input);
-    
+
     return allTags
-      .filter(tag => 
-        tag.startsWith(currentTag.toLowerCase()) && 
+      .filter(tag =>
+        tag.startsWith(currentTag.toLowerCase()) &&
         !alreadyUsedTags.includes(tag)
       )
       .slice(0, 5); // Limit to 5 suggestions
@@ -108,7 +109,7 @@ export default function Home() {
       }
       // Search in extended fields
       if (note.fields) {
-        if (Object.values(note.fields).some(value => 
+        if (Object.values(note.fields).some(value =>
           value.toLowerCase().includes(lowerQuery)
         )) {
           return true;
@@ -237,9 +238,17 @@ export default function Home() {
       const tags = extractTags(inputValue);
       const templateType = detectTemplateTag(inputValue);
       if (templateType) {
+        // Strip the template tag from the input value to preserve the rest of the text
+        const templateTag = TEMPLATES[templateType].tag;
+        const remainingText = inputValue.replace(templateTag, '').trim();
+
+        // Get the first field name for this template
+        const firstFieldName = TEMPLATES[templateType].fields[0]?.name;
+
         setInputMode('extended');
         setExtendedTemplate(templateType);
         setExtendedTags(tags);
+        setExtendedFields(firstFieldName ? { [firstFieldName]: remainingText } : {});
       } else {
         const newNote: Note = {
           id: Date.now().toString(),
@@ -270,17 +279,29 @@ export default function Home() {
     setInputMode('quick');
     setExtendedTemplate(null);
     setExtendedTags([]);
+    setExtendedFields({});
     setInputValue('');
     setSuggestions([]);
     setSuggestionIndex(-1);
     inputRef.current?.focus();
   };
 
-  const handleExtendedNoteCancel = () => {
+  const handleExtendedNoteCancel = (currentFields: Record<string, string>) => {
+    if (extendedTemplate) {
+      // Restore the first field value back to the quick input
+      const firstFieldName = TEMPLATES[extendedTemplate].fields[0]?.name;
+      const firstFieldValue = firstFieldName ? currentFields[firstFieldName] : '';
+
+      // Re-add the template tag if we want to preserve the mode hint, 
+      // but user requested "just the first field", so let's just give the text.
+      // Actually, user said: "if user wants back to quick mode, fill the current field on quick mode with only the first field from extend mode"
+      setInputValue(firstFieldValue || '');
+    }
+
     setInputMode('quick');
     setExtendedTemplate(null);
     setExtendedTags([]);
-    setInputValue('');
+    setExtendedFields({});
     inputRef.current?.focus();
   };
 
@@ -304,7 +325,7 @@ export default function Home() {
     if (suggestions.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSuggestionIndex(prev => 
+        setSuggestionIndex(prev =>
           prev < suggestions.length - 1 ? prev + 1 : prev
         );
         return;
@@ -446,11 +467,10 @@ export default function Home() {
                           key={suggestion}
                           onClick={() => insertSuggestion(suggestion)}
                           onMouseEnter={() => setSuggestionIndex(index)}
-                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                            index === suggestionIndex
-                              ? 'bg-accent text-accent-foreground'
-                              : 'bg-card text-foreground hover:bg-secondary'
-                          }`}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${index === suggestionIndex
+                            ? 'bg-accent text-accent-foreground'
+                            : 'bg-card text-foreground hover:bg-secondary'
+                            }`}
                         >
                           {suggestion}
                         </button>
@@ -491,6 +511,7 @@ export default function Home() {
                 onSave={handleExtendedNoteSave}
                 onCancel={handleExtendedNoteCancel}
                 initialTags={extendedTags}
+                initialFields={extendedFields}
               />
             </div>
           )}
@@ -533,11 +554,10 @@ export default function Home() {
                     <button
                       key={tag}
                       onClick={() => toggleTag(tag)}
-                      className={`px-3 py-1 rounded-full text-xs font-label transition-all ${
-                        isSelected
-                          ? 'bg-accent text-accent-foreground'
-                          : 'bg-accent/20 text-accent hover:bg-accent/30'
-                      }`}
+                      className={`px-3 py-1 rounded-full text-xs font-label transition-all ${isSelected
+                        ? 'bg-accent text-accent-foreground'
+                        : 'bg-accent/20 text-accent hover:bg-accent/30'
+                        }`}
                     >
                       {tag}
                     </button>
@@ -622,11 +642,10 @@ export default function Home() {
                                 <button
                                   key={tag}
                                   onClick={() => toggleTag(tag)}
-                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-label transition-all ${
-                                    isSelected
-                                      ? 'bg-accent text-accent-foreground'
-                                      : 'bg-accent/20 text-accent hover:bg-accent/30'
-                                  }`}
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-label transition-all ${isSelected
+                                    ? 'bg-accent text-accent-foreground'
+                                    : 'bg-accent/20 text-accent hover:bg-accent/30'
+                                    }`}
                                 >
                                   {tag}
                                 </button>
@@ -642,11 +661,10 @@ export default function Home() {
                     <div className="flex-shrink-0 flex gap-1">
                       <button
                         onClick={() => togglePin(note.id)}
-                        className={`p-2 transition-all ${
-                          note.isPinned
-                            ? 'text-accent'
-                            : 'text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100'
-                        }`}
+                        className={`p-2 transition-all ${note.isPinned
+                          ? 'text-accent'
+                          : 'text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100'
+                          }`}
                         title={note.isPinned ? 'Unpin note' : 'Pin note'}
                       >
                         <Pin size={16} fill={note.isPinned ? 'currentColor' : 'none'} />

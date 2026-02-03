@@ -5,8 +5,9 @@ import { Template, TemplateField } from '@/lib/templates';
 interface ExtendedNoteFormProps {
   template: Template;
   onSave: (fields: Record<string, string>, tags: string[]) => void;
-  onCancel: () => void;
+  onCancel: (currentFields: Record<string, string>) => void;
   initialTags?: string[];
+  initialFields?: Record<string, string>;
 }
 
 const ExtendedNoteFormComponent = ({
@@ -14,8 +15,9 @@ const ExtendedNoteFormComponent = ({
   onSave,
   onCancel,
   initialTags = [],
+  initialFields = {},
 }: ExtendedNoteFormProps) => {
-  const [fields, setFields] = useState<Record<string, string>>({});
+  const [fields, setFields] = useState<Record<string, string>>(initialFields);
   const [showOptional, setShowOptional] = useState(false);
   const inputRefs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement>>({});
 
@@ -86,9 +88,9 @@ const ExtendedNoteFormComponent = ({
       handleSave();
     } else if (e.key === 'Escape') {
       // Esc - cancel
-      onCancel();
+      onCancel(fields);
     }
-  }, [showOptional, template.fields, mandatoryFields, optionalFields, handleSave, onCancel]);
+  }, [showOptional, template.fields, mandatoryFields, optionalFields, handleSave, onCancel, fields]);
 
   const visibleFields = showOptional ? template.fields : mandatoryFields;
 
@@ -97,7 +99,7 @@ const ExtendedNoteFormComponent = ({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-foreground">{template.name}</h3>
         <button
-          onClick={onCancel}
+          onClick={() => onCancel(fields)}
           className="text-muted-foreground hover:text-foreground transition-colors"
           title="Cancel (Esc)"
         >
@@ -159,7 +161,7 @@ const ExtendedNoteFormComponent = ({
           Save (Ctrl+Enter)
         </button>
         <button
-          onClick={onCancel}
+          onClick={() => onCancel(fields)}
           className="flex-1 px-4 py-2 bg-secondary text-foreground rounded-md hover:bg-secondary/80 transition-colors"
           title="Cancel (Esc)"
         >
